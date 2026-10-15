@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# Restore persisted, root-owned wpa_supplicant profiles after boot.
+# If firmware-dependent ath10k_pci probed too early, rebind allowlisted
+# Atheros PCI devices once. Never print a PSK. Exit non-zero if no
+# wireless interface starts or no IPv4/SSID appears, so Result=success
+# is not a silent skip.
+set -euo pipefail
+shopt -s nullglob
+
+PCI_RE='^[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-9]$'
+ATH_VENDOR='0x168c'
+DRIVER_DIR=/sys/bus/pci/drivers/ath10k_pci
+
+is_secure_profile() {
+  local config="$1"
+  local metadata
+  metadata="$(stat -c '%u:%g:%a:%F' -- "$config")"
+  [[ "$metadata" == "0:0:600:regular file" ]]
+}
+
+is_interface_name() {
+  [[ "$1" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,14}$ ]]
+}
+
+wireless_present() {
+  local interface="$1"
+  [[ -d "/sys/class/net/$interface/wireless" || -d "/sys/class/net/$interface/phy80211" ]]
+}
+
+has_ipv4() {
+  local interface="$1"
+  ip -4 addr show dev "$interface" 2>/dev/null | grep -q '[[:space:]]inet '
+}
+
+has_ssid() {
+  local interface="$1"
+  local iw
+  iw="$(command -v iw || true)"
+  [ -n "$iw" ] || return 0
+  "$iw" dev "$interface" link 2>/dev/null | grep -q 'SSID: [^[:space:]]'
+}
+
+start_matching_profiles() {
+  local started=0
+  local config interface
+  for config in /etc/wpa_supplicant/wpa_supplicant-*.conf; do
+    is_secure_profile "$config" || {
+      echo "empiieros-wifi-restore: insecure profile refused: $config" >&2
+      exit 1
+    }
+    interface="${config##*/wpa_supplicant-}"
+    interface="${interface%.conf}"
+    is_interface_name "$interface" || {
+      echo "empiieros-wifi-restore: invalid interface in profile: $config" >&2
+      exit 1
+    }
+    if wireless_present "$interface"; then
+      systemctl start "empiieros-wifi@${interface}.service"
+      started=1
+    fi
+  done
+  [ "$started" -eq 1 ]
+}
+
+wait_for_profiles() {
+  local waited=0
+  while [ "$waited" -le 15 ]; do
+    if start_matching_profiles; then
+      return 0
+    fi
+    waited=$((waited + 1))
+    sleep 1
+  done
+  return 1
+}
+
+wait_for_association() {
+  local waited=0
+  local kicked=0
+  local config interface
+  while [ "$waited" -le 25 ]; do
+    for config in /etc/wpa_supplicant/wpa_supplicant-*.conf; do
+      is_secure_profile "$config" || continue
+      interface="${config##*/wpa_supplicant-}"
+      interface="${interface%.conf}"
+      is_interface_name "$interface" || continue
+      if wireless_present "$interface" && has_ssid "$interface"; then
+        if [ "$kicked" -eq 0 ]; then
+          networkctl reconfigure "$interface" >/dev/null 2>&1 || true
+          kicked=1
+        fi
+        if has_ipv4 "$interface"; then
+          echo "empiieros-wifi-restore: associated $interface" >&2
+          return 0
+        fi
+      fi
+    done
+    waited=$((waited + 1))
+    sleep 1
+  done
+  echo "empiieros-wifi-restore: wireless started but no IPv4/SSID" >&2
+  return 1
+}
+
+rebind_atheros_pci() {
+  local rebound=0
+  local dev pci vendor
+  [ -d "$DRIVER_DIR" ] || {
+    echo "empiieros-wifi-restore: ath10k_pci sysfs missing" >&2
+    return 1
+  }
+  for dev in /sys/bus/pci/devices/0000:*; do
+    [ -d "$dev" ] || continue
+    pci="$(basename "$dev")"
+    [[ "$pci" =~ $PCI_RE ]] || continue
+    vendor="$(tr -d '\n' <"$dev/vendor" 2>/dev/null || true)"
+    [ "$vendor" = "$ATH_VENDOR" ] || continue
+    echo "empiieros-wifi-restore: rebind $pci" >&2
+    if [ -e "$DRIVER_DIR/$pci" ]; then
+      printf '%s\n' "$pci" >"$DRIVER_DIR/unbind" || true
+      sleep 1
+    fi
+    printf '%s\n' "$pci" >"$DRIVER_DIR/bind" || true
+    rebound=1
+  done
+  [ "$rebound" -eq 1 ]
+}
+
+if wait_for_profiles; then
+  wait_for_association
+  exit $?
+fi
+
+echo "empiieros-wifi-restore: wireless interface missing; trying ath10k_pci rebind" >&2
+rebind_atheros_pci || {
+  echo "empiieros-wifi-restore: no allowlisted Atheros PCI device was rebound" >&2
+  exit 1
+}
+
+if wait_for_profiles; then
+  wait_for_association
+  exit $?
+fi
+
+echo "empiieros-wifi-restore: no wireless interface became available" >&2
+exit 1

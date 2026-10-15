@@ -1,0 +1,28 @@
+[Unit]
+Description=EmpiierOS capsule-gated OTA fetch over portal VIP
+Documentation=file:///opt/empiieros/docs/RUNTIME.md
+RefuseManualStart=false
+ConditionPathExists=/usr/local/sbin/empiieros-ota-fetch
+ConditionPathExists=/run/empiieros/ota-fetch.request
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/local/sbin/empiieros-ota-fetch
+User=root
+Group=root
+UMask=0077
+Environment=EMPIIEROS_OTA_HELPER=1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=tmpfs
+ProtectSystem=strict
+ReadWritePaths=/run/empiieros /var/lib/empiieros-runtime
+IPAddressDeny=any
+IPAddressAllow=10.88.89.1
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+SystemCallArchitectures=native

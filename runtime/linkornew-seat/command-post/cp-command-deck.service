@@ -1,0 +1,21 @@
+[Unit]
+Description=LinkornEW Command Deck (loopback static + API proxy)
+Documentation=runtime/linkornew-seat/command-post/README.md
+After=network-online.target cp-controller.service
+Wants=cp-controller.service
+
+[Service]
+Type=simple
+Environment=LINKORNEW_DECK_URL=http://127.0.0.1:4191
+Environment=LINKORNEW_DECK_ROOT=/usr/lib/linkornew/command-deck
+ExecStart=/usr/lib/linkornew/cp-deck-serve
+Restart=on-failure
+RestartSec=1
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_INET AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

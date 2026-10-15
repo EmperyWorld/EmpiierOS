@@ -1,0 +1,35 @@
+# EmpiierOS Seat Shield — base table/sets (Substrate paste candidate).
+# Load: nft -f seat_shield.nft
+#
+# Helper only mutates set elements; it never creates this table.
+# Defaults match seat-shield-fw:
+#   --nft-family inet --nft-table seat_shield
+#   --nft-set blocked4 --nft-set6 blocked6
+
+destroy table inet seat_shield
+
+table inet seat_shield {
+	set blocked4 {
+		type ipv4_addr
+		flags interval
+		comment "Seat Shield blocked IPv4 peers"
+	}
+
+	set blocked6 {
+		type ipv6_addr
+		flags interval
+		comment "Seat Shield blocked IPv6 peers"
+	}
+
+	chain input {
+		type filter hook input priority filter - 10; policy accept;
+		ip saddr @blocked4 counter drop
+		ip6 saddr @blocked6 counter drop
+	}
+
+	chain output {
+		type filter hook output priority filter - 10; policy accept;
+		ip daddr @blocked4 counter drop
+		ip6 daddr @blocked6 counter drop
+	}
+}

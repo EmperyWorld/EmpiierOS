@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src linkornew:; style-src linkornew:; img-src linkornew: data:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>LinkornEW</title>
+    <link rel="stylesheet" href="/desk.css" />
+  </head>
+  <body>
+    <main>
+      <h1>LinkornEW</h1>
+      <p id="lead">Служебное кресло.</p>
+      <p id="notice"></p>
+      <button type="button" data-action="command-post">Командный пункт</button>
+      <button type="button" data-action="console">Консоль</button>
+      <button type="button" data-action="browser">Браузер</button>
+    </main>
+    <script src="/desk.js"></script>
+  </body>
+</html>

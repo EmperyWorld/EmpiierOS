@@ -1,0 +1,28 @@
+EmpiierOS third-party notice
+
+The operating-system image is not one license.
+
+First-party EmpiierOS code, including shell-ui, shell-linkorn, the main runtime,
+and shell-gui, defaults to MIT (see LICENSE), unless a file states otherwise.
+Existing MIT grants for seat_shield_core, seat_browser_core, and
+seat_shield_probe remain MIT. Third-party material retains its upstream terms.
+Previously distributed versions retain the licenses delivered with them.
+
+Linux kernel 6.12.20: GPL-2.0-only WITH Linux-syscall-note. No kernel
+patches are in git. Corresponding source is a separate archive from the
+factory tree. It is not proprietary.
+
+Buildroot 2025.02.1: GPL-2.0-or-later for the build system. Package
+licenses for the empiieros-shell defconfig are in the 2026-09-23
+legal-info run (170 target rows, 90 host rows). Two rows were still
+unknown there: dejavu (LICENSE file is Bitstream Vera plus public-domain
+DejaVu changes; the recipe omitted DEJAVU_LICENSE) and host localedef
+(glibc sources; the recipe omitted HOST_LOCALEDEF_LICENSE). Those fields
+are patched in the Trusted Substrate tree. The published SBOM stays
+stale until the next legal-info. Do not treat unknown rows as proprietary.
+
+labwc 0.8.3: GPL-2.0-only.
+gnome-keyring 50.0: GPL-2.0-or-later.
+
+Trusted Substrate installer and state-unlock agent: MIT texts in the
+monorepo pack-organization/trusted-substrate tree.

@@ -1,0 +1,93 @@
+#!/bin/sh
+# LinkornEW tty1 session. The FoFline image does not install this script.
+# tty2–6 stay masked; this program refuses every other terminal.
+# Floor: seatd + session bus. Not systemd --user, not the FoFline kiosk.
+set -eu
+
+tty_now=$(tty 2>/dev/null || true)
+# Getty can leave stdin as /dev/console. Take tty1 when it is the active VT.
+if [ "$tty_now" != /dev/tty1 ] && [ -c /dev/tty1 ]; then
+  vt=$(cat /sys/class/tty/tty0/active 2>/dev/null || true)
+  if [ "$vt" = "tty1" ] || [ -z "$vt" ]; then
+    exec </dev/tty1 >/dev/tty1 2>/dev/tty1 || true
+    tty_now=$(tty 2>/dev/null || true)
+  fi
+fi
+case "$tty_now" in
+  /dev/tty1) ;;
+  *)
+    printf 'linkornew-session: refusing %s\n' "${tty_now:-not-a-tty}" >&2
+    printf 'linkornew-session: refusing %s\n' "${tty_now:-not-a-tty}" >/dev/ttyS0 2>/dev/null || true
+    exit 1
+    ;;
+esac
+
+if [ -n "${LINKORNEW_SESSION_DRY_RUN:-}" ]; then
+  printf 'linkornew-session: tty1\n'
+  exit 0
+fi
+
+uid=$(id -u)
+mkdir -p "${HOME:-/tmp/linkornew-home}"
+HOME="${HOME:-/tmp/linkornew-home}"
+export HOME
+if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+  if [ -d "/run/user/${uid}" ]; then
+    XDG_RUNTIME_DIR="/run/user/${uid}"
+  else
+    XDG_RUNTIME_DIR="/tmp/runtime-${uid}"
+    mkdir -p "${XDG_RUNTIME_DIR}"
+    chmod 700 "${XDG_RUNTIME_DIR}"
+  fi
+  export XDG_RUNTIME_DIR
+fi
+
+if [ -z "${LIBSEAT_BACKEND:-}" ]; then
+  n=0
+  while [ "$n" -lt 10 ]; do
+    if [ -S /run/seatd.sock ]; then
+      LIBSEAT_BACKEND=seatd
+      break
+    fi
+    n=$((n + 1))
+    sleep 1
+  done
+  if [ -n "${LIBSEAT_BACKEND:-}" ]; then
+    export LIBSEAT_BACKEND
+  fi
+fi
+
+here=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+export XDG_CONFIG_HOME="$here/config"
+export XDG_SESSION_TYPE=wayland
+export LABWC_UPDATE_ACTIVATION_ENV=0
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+export WLR_NO_HARDWARE_CURSORS=1
+# virtio-gpu exposes /dev/dri/card0. labwc then picks GLES and freezes
+# on QEMU GTK without virgl. Force pixman on QEMU only.
+if grep -qi qemu /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+  export WLR_RENDERER=pixman
+fi
+if [ -z "${WLR_RENDERER:-}" ] && [ ! -e /dev/dri/card0 ]; then
+  export WLR_RENDERER=pixman
+fi
+
+printf 'linkornew-session: starting labwc seat=%s renderer=%s tty=%s\n' \
+  "${LIBSEAT_BACKEND:-unset}" "${WLR_RENDERER:-auto}" "$tty_now" >/dev/tty1 2>/dev/null || true
+printf 'linkornew-session: starting labwc seat=%s renderer=%s tty=%s\n' \
+  "${LIBSEAT_BACKEND:-unset}" "${WLR_RENDERER:-auto}" "$tty_now" >/dev/ttyS0 2>/dev/null || true
+if ! command -v dbus-run-session >/dev/null 2>&1; then
+  printf 'linkornew-session: missing dbus-run-session — holding tty1\n' >/dev/tty1 2>/dev/null || true
+  sleep infinity
+fi
+if ! command -v labwc >/dev/null 2>&1; then
+  printf 'linkornew-session: missing labwc — holding tty1\n' >/dev/tty1 2>/dev/null || true
+  sleep infinity
+fi
+# Keep labwc on tty1. Do not file-redirect: that hid failures on metal and QEMU.
+set +e
+dbus-run-session -- labwc
+rc=$?
+set -e
+printf 'linkornew-session: labwc exit %s — holding tty1\n' "$rc" >/dev/tty1 2>/dev/null || true
+sleep infinity

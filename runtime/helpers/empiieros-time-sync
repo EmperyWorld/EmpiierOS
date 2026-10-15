@@ -1,0 +1,68 @@
+#!/bin/sh
+# Allowlisted NTP sync trigger. Never sets timezone or a manual clock.
+set -eu
+
+REQ=/run/empiieros/time-sync.request
+RESULT=/run/empiieros/time-sync.result
+SYNC=/run/systemd/timesync/synchronized
+TIMEDATECTL=/usr/bin/timedatectl
+SYSTEMCTL=/usr/bin/systemctl
+
+[ -f "$REQ" ] || {
+  echo "time-sync: request missing" >&2
+  exit 1
+}
+[ ! -L "$REQ" ] || {
+  echo "time-sync: request must not be a symlink" >&2
+  exit 1
+}
+
+action=
+while IFS='=' read -r key value; do
+  case "$key" in
+    action) action=$value ;;
+    ''|\#*) ;;
+    *)
+      echo "time-sync: unknown field" >&2
+      exit 1
+      ;;
+  esac
+done <"$REQ"
+
+[ "$action" = "sync" ] || {
+  echo "time-sync: action must be sync" >&2
+  exit 1
+}
+
+[ -x "$TIMEDATECTL" ] || {
+  echo "time-sync: timedatectl missing" >&2
+  exit 1
+}
+[ -x "$SYSTEMCTL" ] || {
+  echo "time-sync: systemctl missing" >&2
+  exit 1
+}
+
+"$TIMEDATECTL" set-ntp true
+"$SYSTEMCTL" restart systemd-timesyncd.service
+
+i=0
+while [ "$i" -lt 20 ]; do
+  if [ -f "$SYNC" ] && [ ! -L "$SYNC" ]; then
+    server=$("$TIMEDATECTL" show-timesync -p ServerName --value 2>/dev/null || true)
+    {
+      printf 'action=sync\n'
+      printf 'synchronized=1\n'
+      if [ -n "$server" ]; then
+        printf 'server=%s\n' "$server"
+      fi
+    } >"$RESULT"
+    chmod 0600 "$RESULT"
+    exit 0
+  fi
+  i=$((i + 1))
+  sleep 1
+done
+
+echo "time-sync: synchronized file not observed" >&2
+exit 1

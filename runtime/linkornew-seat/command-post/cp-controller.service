@@ -1,0 +1,23 @@
+[Unit]
+Description=LinkornEW Command Post controller (loopback)
+Documentation=runtime/linkornew-seat/command-post/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=LINKORNEW_CP_ROOT=/usr/lib/linkornew/command-post
+Environment=LINKORNEW_CP_STATE=/var/lib/linkornew/command-post
+Environment=NEXUS_PORT=8088
+ExecStart=/usr/lib/linkornew/cp-controller-run.sh
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/linkornew/command-post
+RestrictAddressFamilies=AF_INET AF_UNIX AF_INET6
+
+[Install]
+WantedBy=multi-user.target

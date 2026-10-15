@@ -1,0 +1,52 @@
+# Secrets & env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+runtime/state/
+**/credentials*.json
+
+# Dependencies & build
+node_modules/
+dist/
+build/
+target/
+runtime/linkornew-seat/linkornew-seat
+runtime/linkornew-seat/console
+runtime/linkornew-seat/linkornew-host
+runtime/linkornew-seat/command-post/cp-deck-stub
+runtime/linkornew-seat/command-post/cp-deck-serve
+runtime/linkornew-seat/command-post/command-deck-dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.turbo/
+*.rpm
+*.exe
+
+# Cursor / agent noise
+.cursor/orchestration/audit/*.jsonl
+.cursor/hooks/state/
+!.cursor/orchestration/audit/.gitkeep
+
+# Local trash landing (soft-delete)
+trash/**
+!trash/README.md
+
+# OS / editor
+.DS_Store
+*.swp
+.directory
+
+# Kinship mirrors (must never appear)
+powered_by_emperyworld/
+genEW/
+**/connection-agent/
+runtime/linkornew-seat/command-post/command-post-plant/
+runtime/linkornew-seat/command-post/cpython-plant/
+runtime/target-*-smoke/
+runtime/target-*-smoke*/

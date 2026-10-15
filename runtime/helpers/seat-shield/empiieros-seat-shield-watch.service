@@ -1,0 +1,19 @@
+[Unit]
+Description=EmpiierOS Seat Shield tmp/shm watch helper (S5B)
+Documentation=file:///usr/share/empiieros/seat-shield/README.md
+# Writes {state}/seat_shield/watch.jsonl only. Runtime drains.
+# Never firewall verbs. Never quarantine.
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/empiieros-seat-shield-watch --state-dir /var/lib/empiieros-runtime
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+# Must see host /tmp /var/tmp /dev/shm. Do not set PrivateTmp=true.
+# Do not share the Runtime unit's PrivateTmp namespace.
+PrivateTmp=false
+# This helper is not the firewall actuator. No net-admin capability.
+
+[Install]
+WantedBy=multi-user.target

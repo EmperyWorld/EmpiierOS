@@ -1,0 +1,77 @@
+[package]
+name = "empiieros-runtime"
+version = "0.1.0"
+edition = "2021"
+description = "EmpiierOS privileged runtime over authenticated local IPC"
+publish = false
+license = "MIT"
+
+[features]
+default = ["production"]
+production = []
+# Staff seat. Build with `--no-default-features --features linkornew`.
+# Combined with `production` the crate does not compile.
+linkornew = []
+dev-peer-bypass = []
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+hkdf = "0.12"
+chacha20poly1305 = "0.10"
+ed25519-dalek = "2"
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+tungstenite = { version = "0.26", default-features = false, features = ["handshake", "rustls-tls-webpki-roots"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "0.26"
+zeroize = { version = "=1.8.1", default-features = false, features = ["alloc"] }
+# Factory rustc 1.82 cannot parse edition2024 in zeroize_derive 1.5.
+zeroize_derive = "=1.4.2"
+getrandom = "0.2"
+base64 = "0.22"
+minisign-verify = "0.2"
+p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+tar = "0.4"
+zstd = "0.13"
+thiserror = "2"
+seat_shield_core = { path = "seat_shield_core" }
+seat_browser_core = { path = "seat_browser_core" }
+
+[lib]
+name = "empiieros_runtime"
+path = "src/core.rs"
+
+[[bin]]
+name = "empiieros-runtime"
+path = "src/daemon.rs"
+
+[[bin]]
+name = "empiieros-air-enroll"
+path = "src/bin/air_enroll_helper.rs"
+
+[[bin]]
+name = "empiieros-portal-up"
+path = "src/bin/portal_up_helper.rs"
+
+[[bin]]
+name = "empiieros-spa-fetch"
+path = "src/bin/spa_fetch_helper.rs"
+
+[[bin]]
+name = "empiieros-ota-fetch"
+path = "src/bin/ota_fetch_helper.rs"
+
+[[bin]]
+name = "linkornew-host"
+path = "src/bin/linkornew_host.rs"
+required-features = ["linkornew"]
+
+# H2: production bins abort on panic (smaller gadget surface). Host `cargo test`
+# stays on the dev profile and still unwinds.
+[profile.release]
+panic = "abort"
+lto = false
+strip = "debuginfo"

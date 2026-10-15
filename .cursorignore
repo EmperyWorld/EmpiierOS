@@ -1,0 +1,25 @@
+# Build & deps
+node_modules/
+dist/
+build/
+target/
+.venv/
+__pycache__/
+
+# Secrets
+.env
+.env.*
+secrets/
+*.pem
+*.key
+
+# Agent audit noise (keep designs/reports readable)
+.cursor/orchestration/audit/
+.cursor/hooks/state/
+
+# Soft-delete landing
+trash/
+
+# Never index accidental kinship copies
+powered_by_emperyworld/
+genEW/

@@ -1,0 +1,22 @@
+[Unit]
+Description=LinkornEW Command Post sentinel (loopback)
+Documentation=runtime/linkornew-seat/command-post/README.md
+After=cp-controller.service
+Wants=cp-controller.service
+
+[Service]
+Type=simple
+Environment=LINKORNEW_CP_ROOT=/usr/lib/linkornew/command-post
+Environment=LINKORNEW_CP_STATE=/var/lib/linkornew/command-post
+ExecStart=/usr/lib/linkornew/cp-sentinel-run.sh
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/linkornew/command-post
+RestrictAddressFamilies=AF_INET AF_UNIX AF_INET6
+
+[Install]
+WantedBy=multi-user.target

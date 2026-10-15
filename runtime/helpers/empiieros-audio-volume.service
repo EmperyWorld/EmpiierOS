@@ -1,0 +1,25 @@
+[Unit]
+Description=EmpiierOS allowlisted ALSA volume
+Documentation=file:///opt/empiieros/docs/RUNTIME.md
+RefuseManualStart=false
+ConditionPathExists=/usr/local/sbin/empiieros-audio-volume
+ConditionPathExists=/run/empiieros/audio-volume.request
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/empiieros-audio-volume
+User=root
+Group=root
+UMask=0077
+SupplementaryGroups=audio
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+# Mixer + Dell ALC3204 amp GPIO need /dev/snd. Do not set PrivateDevices=true.
+DeviceAllow=/dev/snd/controlC0 rw
+DeviceAllow=/dev/snd/hwC0D0 rw

@@ -1,0 +1,17 @@
+# LinkornEW tty1 session. Not the FoFline kiosk router.
+# Sourced for login shells only. Getty autologin may report /dev/console.
+if [[ -z "${BASH_VERSION:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+if [[ -n "${WAYLAND_DISPLAY:-}" || -n "${DISPLAY:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+if [[ -c /dev/tty1 ]]; then
+  exec </dev/tty1 >/dev/tty1 2>/dev/tty1 || true
+fi
+printf 'linkornew-profile: exec session tty=%s\n' "$(tty 2>/dev/null || printf none)" >/dev/tty1 2>/dev/null || true
+if [[ -x /usr/lib/linkornew/linkornew-session ]]; then
+  exec /usr/lib/linkornew/linkornew-session
+fi
+printf '\r\nlinkornew-profile: missing session — holding tty1\n' >/dev/tty1 2>/dev/null || true
+sleep infinity

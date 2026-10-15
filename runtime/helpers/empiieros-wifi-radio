@@ -1,0 +1,78 @@
+#!/bin/sh
+# Allowlisted sysfs rfkill writer for WLAN only. Runtime validates the request first.
+set -eu
+
+REQ=/run/empiieros/wifi-radio.request
+ROOT=/sys/class/rfkill
+
+[ -f "$REQ" ] || {
+  echo "wifi-radio: request missing" >&2
+  exit 1
+}
+[ ! -L "$REQ" ] || {
+  echo "wifi-radio: request must not be a symlink" >&2
+  exit 1
+}
+
+action=
+kind=wlan
+name=
+while IFS='=' read -r key value; do
+  case "$key" in
+    action) action=$value ;;
+    type) kind=$value ;;
+    name) name=$value ;;
+    ''|\#*) ;;
+    *)
+      echo "wifi-radio: unknown field" >&2
+      exit 1
+      ;;
+  esac
+done <"$REQ"
+
+case "$action" in
+  block) wanted=0 ;;
+  unblock) wanted=1 ;;
+  *)
+    echo "wifi-radio: action must be block or unblock" >&2
+    exit 1
+    ;;
+esac
+
+[ "$kind" = "wlan" ] || {
+  echo "wifi-radio: type must be wlan" >&2
+  exit 1
+}
+
+if [ -n "$name" ]; then
+  case "$name" in
+    ''|*[!A-Za-z0-9._-]*|*/*|*\\*|*\.\.*)
+      echo "wifi-radio: invalid name" >&2
+      exit 1
+      ;;
+  esac
+fi
+
+found=
+for device in "$ROOT"/rfkill*; do
+  [ -e "$device/type" ] && [ -e "$device/state" ] || continue
+  [ ! -L "$device/type" ] && [ ! -L "$device/state" ] && [ ! -L "$device/soft" ] || {
+    echo "wifi-radio: sysfs nodes must not be symlinks" >&2
+    exit 1
+  }
+  observed_kind=$(cat "$device/type")
+  [ "$observed_kind" = "wlan" ] || continue
+  observed_name=$(cat "$device/name")
+  if [ -n "$name" ] && [ "$observed_name" != "$name" ]; then
+    continue
+  fi
+  found=$device
+  break
+done
+
+[ -n "$found" ] || {
+  echo "wifi-radio: wlan rfkill not observed" >&2
+  exit 1
+}
+
+printf '%s\n' "$wanted" >"$found/state"

@@ -1,0 +1,31 @@
+body {
+  margin: 0;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: sans-serif;
+}
+
+main {
+  padding: 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+button {
+  border: 1px solid #38bdf8;
+  background: transparent;
+  color: inherit;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: left;
+  font: inherit;
+}
+
+button:focus {
+  outline: 2px solid #fbbf24;
+}
+
+#notice {
+  min-height: 1.5rem;
+  color: #fbbf24;
+}

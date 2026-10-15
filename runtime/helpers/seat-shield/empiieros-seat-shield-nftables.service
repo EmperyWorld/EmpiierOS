@@ -1,0 +1,30 @@
+[Unit]
+Description=EmpiierOS Seat Shield nftables base (table inet seat_shield)
+Documentation=file:///usr/share/empiieros/seat-shield/README.md
+DefaultDependencies=no
+After=network-pre.target
+Before=network.target empiieros-runtime.service
+ConditionPathExists=/usr/sbin/nft
+ConditionPathExists=/usr/share/empiieros/seat-shield/seat_shield.nft
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Absolute paths only. No shell interpolation.
+ExecStart=/usr/sbin/nft -f /usr/share/empiieros/seat-shield/seat_shield.nft
+ExecStop=/usr/sbin/nft delete table inet seat_shield
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=tmpfs
+ProtectSystem=strict
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_NETLINK AF_UNIX
+SystemCallArchitectures=native
+# nft uses netlink; do not deny the process an address family here.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,30 @@
+[Unit]
+Description=EmpiierOS Seat Shield firewall helper (oneshot wrapper — optional)
+Documentation=file:///usr/share/empiieros/seat-shield/README.md
+# Preferred production path: Runtime HelperActuator execs the binary directly
+# via command_runner (absolute argv). This unit exists for kinship with
+# wifi-radio / time-sync oneshots and for operators who prefer systemd isolation.
+# Type=oneshot only — not a listening daemon.
+
+[Service]
+Type=oneshot
+# ProtectSystem etc. applied by image policy; keep helper CAP_NET_ADMIN scoped on metal.
+ExecStart=/usr/libexec/empiieros-seat-shield-fw --backend nft --nft-bin /usr/sbin/nft --nft-family inet --nft-table seat_shield --nft-set blocked4 --nft-set6 blocked6 --state-dir /var/lib/empiieros/seat_shield list
+# Real block/unblock argv is supplied by Runtime, not this unit.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=tmpfs
+ProtectSystem=strict
+ReadWritePaths=/var/lib/empiieros /var/lib/empiieros-runtime
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+SystemCallArchitectures=native
+# nft talks netlink; do not deny the process an address family here.
+
+[Install]
+WantedBy=multi-user.target

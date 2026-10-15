@@ -1,0 +1,8 @@
+# Soft-block from @codebase; Read/@path still OK.
+# Thematic capture 00–08 under docs/capture/ stays indexed.
+
+# Huge dialogue dump
+docs/capture/SESSION-DIALOGUE-*.md
+
+trash/
+.cursor/orchestration/audit/

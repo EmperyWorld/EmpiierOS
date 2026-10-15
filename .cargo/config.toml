@@ -1,0 +1,9 @@
+# EmpiierOS Runtime / helper hardening (H2). gnu target only — not musl.
+# Packager also exports the same rustflags so a skipped config cannot ship a soft bin.
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+  "-C", "relocation-model=pic",
+  "-C", "link-arg=-Wl,-z,relro,-z,now",
+  "-C", "link-arg=-Wl,-z,noexecstack",
+]

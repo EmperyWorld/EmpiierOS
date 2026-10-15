@@ -1,0 +1,30 @@
+[Unit]
+Description=LinkornEW tty1 seat
+Documentation=file:///etc/empiieros/seat-profile
+After=seatd.service
+Wants=seatd.service
+Conflicts=getty@tty1.service
+ConditionPathExists=/usr/lib/linkornew/linkornew-session
+
+[Service]
+Type=simple
+User=eliteew-ts
+# Fuse overlay can leave /home/eliteew-ts as uid 1000 mode 0700.
+# systemd then fails the working directory before ExecStart.
+WorkingDirectory=/
+Environment=HOME=/tmp/linkornew-home
+Environment=XDG_CONFIG_HOME=/usr/lib/linkornew/config
+Environment=WLR_NO_HARDWARE_CURSORS=1
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+ExecStart=/usr/lib/linkornew/linkornew-session
+Restart=on-failure
+RestartSec=2
+StartLimitBurst=0
+
+[Install]
+WantedBy=multi-user.target
